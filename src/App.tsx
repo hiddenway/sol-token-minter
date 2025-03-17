@@ -25,6 +25,7 @@ function App() {
   const [loadingFile, setLoadingFile] = useState(false);
   const [tokenLogo, setTokenLogo] = useState<File | Blob>();
   const [tokenLogoLink, setTokenLogoLink] = useState("");
+  const [tokenSupplyText, setTokenSupplyText] = useState("");
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -98,7 +99,7 @@ function App() {
   ) {
     if (!tokenLogo) throw new Error("Token logo can't be empty");
 
-    let imageId = await uploadImageToIPFS("userToken", tokenLogo);
+    let imageId = await uploadImageToIPFS("tokenLogo", tokenLogo);
 
     let metadata = {
       name: tokenName,
@@ -106,9 +107,20 @@ function App() {
       description: description,
       image: `${config.ipfsGateway}/${imageId}`,
     };
+    let cid = await uploadJSONToIPFS(metadata);
 
-    return await uploadJSONToIPFS(metadata);
+    return `${config.ipfsGateway}/${cid}`;
   }
+  const formatNumber = (num: string) => {
+    console.log("String: ", num.replace(/\B(?=(\d{3})+(?!\d))/g, " "))
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  };
+
+  const tokenAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, ""); // Оставляем только цифры
+    setTokenSupplyText(formatNumber(rawValue)); // Форматируем с пробелами
+    setTokenAmount(rawValue); // Храним чистое число
+  };
 
   return (
     <>
@@ -143,9 +155,9 @@ function App() {
                     <div className="form-group">
                       <label htmlFor="token-amount">Token Supply</label>
                       <input
-                        type="number"
-                        value={tokenAmount}
-                        onChange={(e) => setTokenAmount(e.target.value)}
+                        type="text"
+                        value={tokenSupplyText}
+                        onChange={tokenAmountChange}
                         className="form-control"
                         id="token-amount"
                         placeholder="1 000 000 000"
@@ -235,7 +247,11 @@ function App() {
                   onClick={releaseToken}
                   disabled={loading || !wallet.connected}
                 >
-                  {loading ? "Creating..." : "Create Token"}
+                  {loading
+                    ? "Creating..."
+                    : !tokenName
+                    ? "Create Token"
+                    : "Create Token $" + tokenTicker}
                 </button>
                 {message && <p className="mt-2">{message}</p>}
               </div>
