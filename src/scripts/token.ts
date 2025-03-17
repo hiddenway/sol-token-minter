@@ -20,7 +20,7 @@ import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import * as web3 from "@solana/web3.js";
 import * as token from "@solana/spl-token";
 
-interface Metadata {
+export interface Metadata {
   name: string;
   symbol: string;
   uri: string;
@@ -151,13 +151,6 @@ async function addMetaData(
     .use(walletAdapterIdentity(walletContext))
     .use(mplTokenMetadata());
 
-  //   const ourMetadata = {
-  //     // TODO change those values!
-  //     name: "KENYA",
-  //     symbol: "KENYA",
-  //     uri: "https://raw.githubusercontent.com/loopcreativeandy/video-tutorial-resources/main/metadataUpdate/metadata.json",
-  //   };
-
   const onChainData = {
     ...metadata,
     // we don't need that
@@ -166,8 +159,6 @@ async function addMetaData(
     collection: none<Collection>(),
     uses: none<Uses>(),
   };
-
-  //if (INITIALIZE) {
 
   const accounts: CreateMetadataAccountV3InstructionAccounts = {
     mint: minter,
@@ -188,25 +179,6 @@ async function addMetaData(
   }).sendAndConfirm(umi);
 
   console.log(txid);
-
-  //   } else {
-  //     const data: UpdateMetadataAccountV2InstructionData = {
-  //       data: some(onChainData),
-  //       discriminator: 0,
-  //       isMutable: some(true),
-  //       newUpdateAuthority: none<PublicKey>(),
-  //       primarySaleHappened: none<boolean>(),
-  //     };
-  //     const accounts: UpdateMetadataAccountV2InstructionAccounts = {
-  //       metadata: findMetadataPda(umi, { mint: fromWeb3JsPublicKey(minter) }),
-  //       updateAuthority: walletContext.publicKey,
-  //     };
-  //     const txid = await updateMetadataAccountV2(umi, {
-  //       ...accounts,
-  //       ...data,
-  //     }).sendAndConfirm(umi);
-  //     console.log(txid);
-  //   }
 }
 
 export async function createSPLTokenWithMetadata(
