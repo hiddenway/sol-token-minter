@@ -4,14 +4,11 @@ import App from "./App";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
 
 import "@solana/wallet-adapter-react-ui/styles.css"; // Стили кнопки подключения кошелька
 import { config } from "./config";
 
-let network_name:any = config.network || "testnet";
-
-const network = clusterApiUrl(network_name); // Используем тестовую сеть
+const network = config.network;
 
 const wallets = [new PhantomWalletAdapter()];
 
