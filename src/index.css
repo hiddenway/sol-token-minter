@@ -24,9 +24,10 @@ body {
 }
 
 .gradient-title {
-  background: linear-gradient(to right, #3344FF, #FC32FF);
+  background: linear-gradient(to right, #5D67D9, #FB78D6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  font-weight: 500;
 }
 
 .form-group {
@@ -37,10 +38,44 @@ body {
 .form-control {
   margin-top: 10px;
   border-radius: 20px;
-  background-color: #33333A;
+  background-color: #33333A!important;
   color: white;
-  border: 1px solid transparent;
-  border-color: #fff;
+  padding: 10px 15px;
+  border: none; /* Убираем стандартный border */
+  position: relative;
+  z-index: 1; /* Чтобы контент был поверх */
+}
+
+.form-control::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  border-radius: 22px; /* Должно быть чуть больше, чем у .form-control */
+  background: linear-gradient(to right, hsla(235, 62%, 61%, 0.700), hsla(317, 94%, 73%, 0.700));
+  z-index: -1;
+}
+
+.form-control-wrapper {
+  position: relative;
+}
+
+.form-control-wrapper::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  border-radius: 22px;
+  background: linear-gradient(to right, hsla(235, 62%, 61%, 0.700), hsla(317, 94%, 73%, 0.700));
+  z-index: 0;
+}
+
+.underline {
+  text-decoration: underline;
 }
 
 .description {
@@ -55,8 +90,8 @@ body {
 }
 
 .form-control::placeholder {
-  color: #757575; /* Розовый цвет */
-  opacity: 1; /* Полная непрозрачность */
+  color: hsla(0, 0%, 100%, 0.200);
+  opacity: 1;
   font-size: 16px;
 }
 
@@ -66,7 +101,7 @@ body {
 }
 
 .gradient-description {
-  background: linear-gradient(to right, #3344FF, #FC32FF);
+  background: linear-gradient(to right, #5D67D9, #FB78D6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -99,12 +134,13 @@ body {
 }
 
 .upload-container {
-  display: flex;
+  /* display: flex; */
   justify-content: center;
   align-items: center;
   margin-top: 10px;
   margin-bottom: 10px;
 }
+
 
 .upload-box {
   display: flex;
@@ -115,7 +151,7 @@ body {
   height: 150px;
   background-color: #33333A;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 20px;
   text-align: center;
   color: white;
   cursor: pointer;
@@ -123,7 +159,6 @@ body {
   font-size: 14px;
   padding: 20px;
   transition: border-color 0.3s ease;
-  border-color: #fff;
 }
 
 .upload-box i {
@@ -135,27 +170,24 @@ body {
   border-color: #ffffff;
 }
 
-.upload-box::before {
-  content: "";
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border-radius: 14px;
-  background: linear-gradient(to right, #3a49f9, #f307ac);
-  z-index: -1;
-}
-
 .btn-create-coin {
-  background: #3a49f9;
+  background: linear-gradient(to right, #5D67D9, #FB78D6);
   color: white;
+  border-radius: 10px; /* Установите нужное закругление */
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: background 0.3s;
 }
 
 .btn-create-coin:hover {
-  background: #3a4af9a5;
-  color: white;
+  background: linear-gradient(to right, #5d67d9ce, #fb78d9ce);
 }
+
 
 .upload-container img {
   width: 130px;
@@ -187,4 +219,34 @@ body {
                     linear-gradient(to right, #5D67D9, #FB78D6);
   background-origin: border-box;
   background-clip: content-box, border-box;
+}
+
+
+.form-switch .form-check-input {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(255,255,255,1)'/%3e%3c/svg%3e"); /* Цвет кружочка */
+  
+  width: 2em;
+  height: 1.2em; /* Уменьшаем высоту */
+  margin-left: -2.5em;
+  
+  background-color: #444 !important; /* Фон свитчера */
+  background-image: var(--bs-form-switch-bg);
+  background-position: left center;
+  
+  border: 2px solid #666 !important; /* Граница */
+  border-radius: 2em;
+  
+  transition: background-position 0.15s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+/* Фон и кружок при включении */
+.form-switch .form-check-input:checked {
+  background-color: #6a0dad !important; /* Фон при включении */
+  border: 2px solid #a349a4 !important;
+  background-position: right center;
+}
+
+/* Цвет кружочка при включении */
+.form-switch .form-check-input:checked::before {
+  background-color: yellow !important; /* Цвет ползунка */
 }

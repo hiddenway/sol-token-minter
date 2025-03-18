@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react"; // Подключаем Phantom Wallet
+import { WalletModalContext } from "@solana/wallet-adapter-react-ui";
 // Кнопка подключения кошелька
 import { Metadata, createSPLTokenWithMetadata } from "./scripts/token";
 import { uploadImageToIPFS, uploadJSONToIPFS } from "./scripts/ipfs";
@@ -48,11 +49,31 @@ function App() {
       tokenDecimals: tokenDecimals === "" || isNaN(Number(tokenDecimals)),
       tokenTicker: !tokenTicker.trim(),
       tokenLogo: !tokenLogo,
-      tokenDescription: !description
+      tokenDescription: !description,
     };
     setErrors(newErrors);
     return !Object.values(newErrors).includes(true);
   };
+
+  function useOpenWalletModal() {
+    const { setVisible } = useContext(WalletModalContext); // Контекст для открытия попапа
+    const { wallet, connect } = useWallet();
+  
+    return async () => {
+      try {
+        if (!wallet) {
+          setVisible(true); // Открываем WalletMultiButton popup
+          return;
+        }
+  
+        await connect(); // Подключаемся, если кошелек уже выбран
+      } catch (error) {
+        console.error("Ошибка при подключении кошелька:", error);
+      }
+    };
+  }
+
+  const openWalletModal = useOpenWalletModal();
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -82,7 +103,6 @@ function App() {
   async function releaseToken() {
     validateForm();
 
-
     if (!wallet.connected) {
       setMessage("❌ Connect Phantom Wallet!");
       setMessageType("error");
@@ -105,8 +125,6 @@ function App() {
     }
 
     setLoading(true);
-
-    console.log("revokeMint:", revokeMint, "revokeFreeze:", revokeFreeze);
 
     try {
       const metaDataURL = await deployMetadataJSON(
@@ -159,6 +177,7 @@ function App() {
 
     return `${config.ipfsGateway}/${cid}`;
   }
+
   const formatNumber = (num: string) => {
     console.log("String: ", num.replace(/\B(?=(\d{3})+(?!\d))/g, " "));
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -178,7 +197,15 @@ function App() {
         <div className="row mb-5">
           <h1 className="text-center">Solana Token Creator</h1>
           <h3 className="text-center gradient-description">
-            Create tokens in a few clicks! (Video instruction <a href="https://youtu.be/5-8-0-9-5" target="_blank" rel="noreferrer">here</a>)
+            Create tokens in a few clicks! (Video instruction{" "}
+            <a
+              href="https://youtu.be/5-8-0-9-5"
+              target="_blank"
+              rel="noreferrer"
+            >
+              here
+            </a>
+            )
           </h3>
         </div>
         <div className="row justify-content-center">
@@ -191,49 +218,70 @@ function App() {
                       <label htmlFor="token-name">
                         <span className="text-danger">*</span> Token Name
                       </label>
-                      <input
-                        type="text"
-                        value={tokenName}
-                        maxLength={32}
-                        onChange={(e) => setTokenName(e.target.value)}
-                        className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
-                        id="token-name"
-                        placeholder="Ex: Solana"
-                      />
-                      <div className="invalid-feedback">Token Name is required.</div>
+                      <div className="form-control-wrapper">
+                        {" "}
+                        <input
+                          type="text"
+                          value={tokenName}
+                          maxLength={32}
+                          onChange={(e) => setTokenName(e.target.value)}
+                          className={`form-control ${
+                            errors.tokenName ? "is-invalid" : ""
+                          }`}
+                          id="token-name"
+                          placeholder="Ex: Solana"
+                        />
+                      </div>
+                      <div className="invalid-feedback" style={{ display: errors.tokenName ? "block" : "none" }}>
+                        Token Name is required.
+                      </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="token-amount">
                         <span className="text-danger">*</span> Token Supply
                       </label>
-                      <input
-                        type="text"
-                        value={tokenSupplyText}
-                        maxLength={15}
-                        onChange={tokenAmountChange}
-                        className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
-                        id="token-amount"
-                        placeholder="1 000 000 000"
-                      />
-                      <div className="invalid-feedback">Token Supply is required.</div>
+                      <div className="form-control-wrapper">
+                        {" "}
+                        <input
+                          type="text"
+                          value={tokenSupplyText}
+                          maxLength={15}
+                          onChange={tokenAmountChange}
+                          className={`form-control ${
+                            errors.tokenSupply ? "is-invalid" : ""
+                          }`}
+                          id="token-amount"
+                          placeholder="1 000 000 000"
+                        />
+                      </div>
+                      <div className="invalid-feedback" style={{ display: errors.tokenSupply ? "block" : "none" }}>
+                        Token Supply is required.
+                      </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="token-amount">
                         <span className="text-danger">*</span> Token Decimals
                       </label>
-                      <input
-                        type="number"
-                        value={tokenDecimals}
-                        max={9}
-                        onChange={(e) => {
-                          const value = Math.min(9, Number(e.target.value)); // Ограничение на 9
-                          setTokenDecimals(value.toString());
-                        }}
-                        className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
-                        id="token-decimals"
-                        placeholder="6"
-                      />
-                      <div className="invalid-feedback">Decimals is required.</div>
+                      <div className="form-control-wrapper">
+                        {" "}
+                        <input
+                          type="number"
+                          value={tokenDecimals}
+                          max={9}
+                          onChange={(e) => {
+                            const value = Math.min(9, Number(e.target.value)); // Ограничение на 9
+                            setTokenDecimals(value.toString());
+                          }}
+                          className={`form-control ${
+                            errors.tokenDecimals ? "is-invalid" : ""
+                          }`}
+                          id="token-decimals"
+                          placeholder="6"
+                        />
+                      </div>
+                      <div className="invalid-feedback" style={{ display: errors.tokenDecimals ? "block" : "none" }}>
+                        Decimals is required.
+                      </div>
                     </div>
                   </div>
                   {/* Token Image (теперь справа) */}
@@ -242,69 +290,92 @@ function App() {
                       <label htmlFor="token-ticker">
                         <span className="text-danger">*</span> Symbol
                       </label>
-                      <input
-                        type="text"
-                        maxLength={8}
-                        value={tokenTicker}
-                        onChange={(e) => setTokenTicker(e.target.value)}
-                        className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
-                        id="token-ticker"
-                        placeholder="SOL"
-                      />
-                      <div className="invalid-feedback">Token Ticker is required.</div>
+                      <div className="form-control-wrapper">
+                        <input
+                          type="text"
+                          maxLength={8}
+                          value={tokenTicker}
+                          onChange={(e) => setTokenTicker(e.target.value)}
+                          className={`form-control ${
+                            errors.tokenTicker ? "is-invalid" : ""
+                          }`}
+                          id="token-ticker"
+                          placeholder="SOL"
+                        />
+                      </div>
+                      <div className="invalid-feedback" style={{ display: errors.tokenTicker ? "block" : "none" }}>
+                        Token Ticker is required.
+                      </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="file-input">
                         <span className="text-danger">*</span> Token Image
                       </label>
                       <div className="upload-container">
-                        {!tokenLogo && (
-                          <label className="upload-box">
-                            <i className="bi bi-cloud-upload"></i>
-                            <p>Drag and drop here to upload</p>
-                            <small>.png .jpg max 5 mb</small>
-                            <input
-                              type="file"
-                              id="file-upload"
-                              onChange={handleFileChange}
-                              className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
-                              accept=".png, .jpg"
-                              hidden
-                            />
-                            <div className="invalid-feedback">Token Logo is required.</div>
-                          </label>
-                        )}
-                        {tokenLogo && (
-                          <label className="upload-box">
-                            <img
-                              src={tokenLogoLink}
-                              alt="Preview"
-                              className="mt-2 w-full h-full control object-cover rounded-lg"
-                            />
-                            <input
-                              type="file"
-                              id="file-upload"
-                              onChange={handleFileChange}
-                              className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
-                              accept=".png, .jpg"
-                              hidden
-                            />
-                          </label>
-                        )}
+                        <div className="form-control-wrapper">
+                          {!tokenLogo && (
+                            <label className="upload-box">
+                              <i className="bi bi-cloud-upload"></i>
+                              <p>Drag and drop here to upload</p>
+                              <small>.png .jpg max 5 mb</small>
+                              <input
+                                type="file"
+                                id="file-upload"
+                                onChange={handleFileChange}
+                                className={`form-control ${
+                                  errors.tokenLogo ? "is-invalid" : ""
+                                }`}
+                                accept=".png, .jpg"
+                                hidden
+                              />
+                              <div className="invalid-feedback" style={{ display: errors.tokenLogo ? "block" : "none" }}>
+                                Token Logo is required.
+                              </div>
+                            </label>
+                          )}
+                          {tokenLogo && (
+                            <label className="upload-box">
+                              <img
+                                src={tokenLogoLink}
+                                alt="Preview"
+                                className="mt-2 w-full h-full control object-cover rounded-lg"
+                              />
+                              <input
+                                type="file"
+                                id="file-upload"
+                                onChange={handleFileChange}
+                                className={`form-control ${
+                                  errors.tokenName ? "is-invalid" : ""
+                                }`}
+                                accept=".png, .jpg"
+                                hidden
+                              />
+                            </label>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="description-input"><span className="text-danger">*</span> Description</label>
-                    <textarea
-                      id="description-input"
-                      value={description}
-                      maxLength={500}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className={`description form-control ${errors.tokenName ? "is-invalid" : ""}`}
-                      placeholder="Ex: The most popular coin on Solana."
-                    />
-                    <div className="invalid-feedback">Description is required.</div>
+                    <label htmlFor="description-input">
+                      <span className="text-danger">*</span> Description
+                    </label>
+                    <div className="form-control-wrapper">
+                      {" "}
+                      <textarea
+                        id="description-input"
+                        value={description}
+                        maxLength={500}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className={`description form-control ${
+                          errors.tokenDescription ? "is-invalid" : ""
+                        }`}
+                        placeholder="Ex: The most popular coin on Solana."
+                      />
+                    </div>
+                    <div className="invalid-feedback" style={{ display: errors.tokenDescription ? "block" : "none" }}>
+                      Description is required.
+                    </div>
                   </div>
                   <TokenSettings
                     revokeFreeze={revokeFreeze}
@@ -339,13 +410,21 @@ function App() {
                     ></span>{" "}
                     Creating...
                   </button>
+                ) : !wallet.connected ? (
+                  <button
+                    type="button"
+                    className="btn w-100 btn-create-coin"
+                    id="connect-wallet"
+                    onClick={openWalletModal} // Теперь вызывает подключение кошелька
+                  >
+                    Connect Wallet
+                  </button>
                 ) : !tokenTicker ? (
                   <button
                     type="button"
                     className="btn w-100 btn-create-coin"
                     id="create-token"
                     onClick={releaseToken}
-                    disabled={!wallet.connected}
                   >
                     Create Token (Fee 0.2 SOL)
                   </button>
@@ -355,7 +434,6 @@ function App() {
                     className="btn w-100 btn-create-coin"
                     id="create-token"
                     onClick={releaseToken}
-                    disabled={!wallet.connected}
                   >
                     Create Token ${tokenTicker} (Fee 0.2 SOL)
                   </button>
