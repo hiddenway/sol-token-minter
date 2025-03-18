@@ -6,7 +6,7 @@ import {
   Uses,
   createMetadataAccountV3,
 } from "@metaplex-foundation/mpl-token-metadata";
-import { none, publicKey } from "@metaplex-foundation/umi";
+import { none } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import {

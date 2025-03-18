@@ -1,8 +1,8 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useContext } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react"; // Подключаем Phantom Wallet
 import { WalletModalContext } from "@solana/wallet-adapter-react-ui";
 // Кнопка подключения кошелька
-import { Metadata, createSPLTokenWithMetadata } from "./scripts/token";
+import { createSPLTokenWithMetadata } from "./scripts/token";
 import { uploadImageToIPFS, uploadJSONToIPFS } from "./scripts/ipfs";
 import Header from "./components/headers";
 import TokenSettings from "./components/tokenSettings";
@@ -11,11 +11,9 @@ import "@solana/wallet-adapter-react-ui/styles.css"; // Стили кнопки 
 import Footer from "./components/footer";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.min.js";
-import { config } from "./config";
 import "./index.css";
 
 function App() {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [tokenName, setTokenName] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
   const [tokenTicker, setTokenTicker] = useState("");
@@ -25,7 +23,6 @@ function App() {
   const [description, setDescription] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState("6");
 
-  const [loadingFile, setLoadingFile] = useState(false);
   const [tokenLogo, setTokenLogo] = useState<File | Blob>();
   const [tokenLogoLink, setTokenLogoLink] = useState("");
   const [tokenSupplyText, setTokenSupplyText] = useState("");
@@ -85,7 +82,6 @@ function App() {
         setMessageType("error");
         return;
       }
-      setLoadingFile(true);
       setTokenLogo(file);
       setTokenLogoLink(URL.createObjectURL(file));
     }
@@ -93,12 +89,6 @@ function App() {
 
   const { connection } = useConnection();
   const wallet = useWallet(); // Получаем объект кошелька Phantom
-
-  useEffect(() => {
-    if (wallet.publicKey) {
-      setWalletAddress(wallet.publicKey.toBase58());
-    }
-  }, [wallet.publicKey]);
 
   async function releaseToken() {
     validateForm();
@@ -191,13 +181,13 @@ function App() {
 
   return (
     <>
-      <Header walletAddress={walletAddress || "Not Connected"} />
+      <Header />
       <div className="container py-5 p-3">
         {/* Кнопка подключения Phantom */}
         <div className="row mb-5">
           <h1 className="text-center">Solana Token Creator</h1>
           <h3 className="text-center gradient-description">
-            Create tokens in a few clicks! (Video instruction{" "}
+          Create tokens in a few clicks! (Watch the video tutorial{" "}
             <a
               href="https://youtu.be/5-8-0-9-5"
               target="_blank"
