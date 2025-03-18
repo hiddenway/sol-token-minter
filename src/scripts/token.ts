@@ -6,7 +6,7 @@ import {
   Uses,
   createMetadataAccountV3,
 } from "@metaplex-foundation/mpl-token-metadata";
-import { none } from "@metaplex-foundation/umi";
+import { none, publicKey } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import {
@@ -14,11 +14,15 @@ import {
   Keypair,
   clusterApiUrl,
   Transaction,
+  PublicKey,
+  SystemProgram
 } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import * as web3 from "@solana/web3.js";
 import * as token from "@solana/spl-token";
+import { toWeb3JsInstruction } from '@metaplex-foundation/umi-web3js-adapters';
+import { config } from "../config";
 
 export interface Metadata {
   name: string;
@@ -28,11 +32,12 @@ export interface Metadata {
 
 // СОЗДАЁТ АККАУНТ ДЛЯ КОЙНА И КУДА ТАК СКАЗАТЬ ЗАГРУЖЕН КОНТРАКТ
 async function buildCreateTokenTransaction(
-  connection: web3.Connection,
+  connection: Connection,
   payer: web3.PublicKey,
   minter: Keypair,
-  decimals: number
-): Promise<web3.Transaction> {
+  decimals: number,
+  transaction: web3.Transaction
+) {
   // ОТПРАВКА СТАРТОВЫХ ТОКЕНОВ ДЛЯ СОЗДАНИЯ АККАУНТА
   const lamports = await token.getMinimumBalanceForRentExemptMint(connection);
 
@@ -45,12 +50,6 @@ async function buildCreateTokenTransaction(
   if (minter) {
     accountKeypair = minter;
   }
-
-  // СОЗДАНИЕ ТРАНЗАКЦИИ
-  const transaction = new Transaction({
-    feePayer: payer,
-    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-  });
 
   transaction.add(
     web3.SystemProgram.createAccount({
@@ -69,19 +68,15 @@ async function buildCreateTokenTransaction(
       programId
     )
   );
-
-  transaction.sign(accountKeypair);
-
-  return transaction;
 }
 
 // СВЯЗЫВАЕТ АККАУНТ-ХРАНИЛИЩЕ С ТОКЕНОМ ДЛЯ ХРАНЕНИЯ БАЛАНСОВ
 async function buildCreateAssociatedTokenAccountTransaction(
-  connection: web3.Connection,
   payer: web3.PublicKey,
   mint: web3.PublicKey,
-  associatedTokenAddress: web3.PublicKey
-): Promise<web3.Transaction> {
+  associatedTokenAddress: web3.PublicKey,
+  transaction: web3.Transaction
+) {
   if (!associatedTokenAddress) {
     associatedTokenAddress = await token.getAssociatedTokenAddress(
       mint,
@@ -89,11 +84,6 @@ async function buildCreateAssociatedTokenAccountTransaction(
       false
     );
   }
-
-  const transaction = new Transaction({
-    feePayer: payer,
-    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-  });
 
   transaction.add(
     token.createAssociatedTokenAccountInstruction(
@@ -103,24 +93,18 @@ async function buildCreateAssociatedTokenAccountTransaction(
       mint
     )
   );
-
-  return transaction;
 }
 
 // МИНТИТ ТОКЕНЫ
 async function buildCreateMintTransaction(
-  connection: web3.Connection,
   payer: web3.PublicKey,
   mint: web3.PublicKey,
   associatedTokenAddress: web3.PublicKey,
   supply: number,
-  decimals: number
+  decimals: number,
+  transaction: web3.Transaction
 ) {
   // СОЗДАНИЕ ТРАНЗАКЦИИ
-  const transaction = new Transaction({
-    feePayer: payer,
-    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-  });
 
   const bigSupply = BigInt(supply) * BigInt(10) ** BigInt(decimals);
 
@@ -134,8 +118,56 @@ async function buildCreateMintTransaction(
       bigSupply
     )
   );
+}
 
-  return transaction;
+// Убираем возможность минтить ещё токенов
+async function buildRevokeMintTransaction(
+  payer: web3.PublicKey,
+  mint: web3.PublicKey,
+  transactions: Transaction
+) {
+  // СОЗДАНИЕ ТРАНЗАКЦИИ
+
+  transactions.add(
+    token.createSetAuthorityInstruction(
+      mint,
+      payer,
+      token.AuthorityType.MintTokens,
+      null
+    )
+  );
+}
+
+// Убираем возможность замораживать токены
+async function buildRevokeFreezeTransaction(
+  payer: web3.PublicKey,
+  mint: web3.PublicKey,
+  transaction: web3.Transaction
+) {
+  // СОЗДАНИЕ ТРАНЗАКЦИИ
+
+  transaction.add(
+    token.createSetAuthorityInstruction(
+      mint,
+      payer,
+      token.AuthorityType.FreezeAccount,
+      null
+    )
+  );
+}
+
+// Моя комиссия
+async function buildMintComission(
+  payer: web3.PublicKey,
+  transaction: web3.Transaction
+) {
+  transaction.add(
+    SystemProgram.transfer({
+      fromPubkey: payer,
+      toPubkey: new PublicKey(config.feeReceiver),
+      lamports: config.comissionAmount, // Указываем сумму в лампортах
+    })
+  );
 }
 
 // ДОБАВЛЯЕТ МЕТАДАННЫЕ В ТОКЕН
@@ -143,7 +175,8 @@ async function addMetaData(
   connection: any,
   walletContext: any,
   minter: any,
-  metadata: Metadata
+  metadata: Metadata,
+  transactions: Transaction
 ) {
   let _rpcEndpoint = connection._rpcEndpoint || clusterApiUrl("testnet");
 
@@ -160,25 +193,30 @@ async function addMetaData(
     uses: none<Uses>(),
   };
 
+  let mintAuthority = walletContext.publicKey;
+  let updateAuthority = walletContext.publicKey;
+
+  console.log("Mint authority: ", mintAuthority);
+
   const accounts: CreateMetadataAccountV3InstructionAccounts = {
     mint: minter,
-    mintAuthority: walletContext.publicKey,
-    updateAuthority: walletContext.publicKey,
+    mintAuthority: mintAuthority,
+    updateAuthority: updateAuthority,
     payer: umi.payer,
   };
 
   const data: CreateMetadataAccountV3InstructionDataArgs = {
-    isMutable: true,
+    isMutable: false,
     collectionDetails: null,
     data: onChainData,
   };
 
-  const txid = await createMetadataAccountV3(umi, {
+  const instructionMetaData = await createMetadataAccountV3(umi, {
     ...accounts,
     ...data,
-  }).sendAndConfirm(umi);
+  }).getInstructions()
 
-  console.log(txid);
+  transactions.add(toWeb3JsInstruction(instructionMetaData[0]));
 }
 
 export async function createSPLTokenWithMetadata(
@@ -186,7 +224,9 @@ export async function createSPLTokenWithMetadata(
   walletContext: any, // Phantom Wallet
   supply: number,
   decimals: number,
-  metadata: Metadata
+  metadata: Metadata,
+  revokeMintAuthority: boolean = false,
+  revokeFreezeAuthority: boolean = false
 ): Promise<string> {
   if (!walletContext.publicKey || !walletContext.signTransaction) {
     throw new Error(
@@ -202,18 +242,18 @@ export async function createSPLTokenWithMetadata(
     // СОЗДАНИЕ АККАУНТА ДЛЯ ТОКЕНА
     var minter = web3.Keypair.generate();
 
-    let transctions = await buildCreateTokenTransaction(
+    var transactions = new Transaction({
+      feePayer: walletContext.publicKey,
+      recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    });
+
+    await buildCreateTokenTransaction(
       connection,
       walletContext.publicKey,
       minter,
-      decimals
+      decimals,
+      transactions
     );
-
-    console.log(
-      "Transaction Signature:",
-      await walletContext.sendTransaction(transctions, connection)
-    );
-    console.log(`✅ Создан токен: ${minter.publicKey.toBase58()}`);
 
     // /// /// /// // /// / // / / / / // / / / / // /
 
@@ -225,37 +265,60 @@ export async function createSPLTokenWithMetadata(
       false
     );
 
-    transctions = await buildCreateAssociatedTokenAccountTransaction(
-      connection,
+    await buildCreateAssociatedTokenAccountTransaction(
       walletContext.publicKey,
       minter.publicKey,
-      associatedTokenAddress
+      associatedTokenAddress,
+      transactions
     );
-
-    console.log(
-      "Transaction Signature:",
-      await walletContext.sendTransaction(transctions, connection)
-    );
-    console.log(`✅ Создан аккаунт токена: ${minter.publicKey.toBase58()}`);
 
     // /// /// /// // /// / // / / / / // / / / / // /
-    transctions = await buildCreateMintTransaction(
-      connection,
+    
+    await buildCreateMintTransaction(
       walletContext.publicKey,
       minter.publicKey,
       associatedTokenAddress,
       supply,
-      decimals
+      decimals,
+      transactions
     );
 
-    console.log(
-      "Transaction Signature:",
-      await walletContext.sendTransaction(transctions, connection)
+    await addMetaData(connection, walletContext, minter.publicKey, metadata, transactions);
+
+    if (revokeFreezeAuthority) {
+      await buildRevokeFreezeTransaction(
+        walletContext.publicKey,
+        minter.publicKey,
+        transactions
+      );
+    }
+
+    if (revokeMintAuthority) {
+      await buildRevokeMintTransaction(
+        walletContext.publicKey,
+        minter.publicKey,
+        transactions
+      );
+    }
+
+    await buildMintComission(walletContext.publicKey, transactions);
+
+    transactions.sign(minter);
+
+    let signature = await walletContext.sendTransaction(
+      transactions,
+      connection
     );
+
+    const latestBlockHash = await connection.getLatestBlockhash();
+
+    await connection.confirmTransaction({
+      signature,
+      blockhash: latestBlockHash.blockhash,
+      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+    });
 
     console.log(`✅ Токены сминчены в аккаунт: ${minter.publicKey.toBase58()}`);
-
-    await addMetaData(connection, walletContext, minter.publicKey, metadata);
 
     return minter.publicKey.toBase58();
   } catch (error) {

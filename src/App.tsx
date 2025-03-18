@@ -4,6 +4,7 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react"; // По
 import { Metadata, createSPLTokenWithMetadata } from "./scripts/token";
 import { uploadImageToIPFS, uploadJSONToIPFS } from "./scripts/ipfs";
 import Header from "./components/headers";
+import TokenSettings from "./components/tokenSettings";
 
 import "@solana/wallet-adapter-react-ui/styles.css"; // Стили кнопки Phantom
 import Footer from "./components/footer";
@@ -19,6 +20,7 @@ function App() {
   const [tokenTicker, setTokenTicker] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error" | "">("");
   const [description, setDescription] = useState("");
   const [tokenDecimals, setTokenDecimals] = useState("6");
 
@@ -27,22 +29,44 @@ function App() {
   const [tokenLogoLink, setTokenLogoLink] = useState("");
   const [tokenSupplyText, setTokenSupplyText] = useState("");
 
+  const [revokeFreeze, setRevokeFreeze] = useState(false);
+  const [revokeMint, setRevokeMint] = useState(false);
+
+  const [errors, setErrors] = useState({
+    tokenName: false,
+    tokenSupply: false,
+    tokenDecimals: false,
+    tokenTicker: false,
+    tokenLogo: false,
+    tokenDescription: false,
+  });
+
+  const validateForm = () => {
+    const newErrors = {
+      tokenName: !tokenName.trim(),
+      tokenSupply: !tokenSupplyText.trim(),
+      tokenDecimals: tokenDecimals === "" || isNaN(Number(tokenDecimals)),
+      tokenTicker: !tokenTicker.trim(),
+      tokenLogo: !tokenLogo,
+      tokenDescription: !description
+    };
+    setErrors(newErrors);
+    return !Object.values(newErrors).includes(true);
+  };
+
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage("❌ File is too large! Maximum size is 5MB.");
+        setMessageType("error");
+        return;
+      }
       setLoadingFile(true);
       setTokenLogo(file);
       setTokenLogoLink(URL.createObjectURL(file));
-      // try {
-      //     const uploadedCid = await uploadImageToIPFS('image', file);
-      //     setCid(uploadedCid);
-      // } catch (error) {
-      //     console.error(error);
-      // } finally {
-      //   setLoadingFile(false);
-      // }
     }
   };
 
@@ -56,13 +80,33 @@ function App() {
   }, [wallet.publicKey]);
 
   async function releaseToken() {
+    validateForm();
+
+
     if (!wallet.connected) {
-      alert("Подключите Phantom Wallet!");
+      setMessage("❌ Connect Phantom Wallet!");
+      setMessageType("error");
+      return;
+    }
+    if (!tokenName || !tokenTicker || !tokenAmount || !description) {
+      setMessage("❌ Fill in all required fields!");
+      setMessageType("error");
+      return;
+    }
+    if (isNaN(Number(tokenAmount)) || Number(tokenAmount) <= 0) {
+      setMessage("❌ Invalid token amount!");
+      setMessageType("error");
+      return;
+    }
+    if (!tokenLogo) {
+      setMessage("❌ Upload a token logo!");
+      setMessageType("error");
       return;
     }
 
     setLoading(true);
-    setMessage("Создание токена...");
+
+    console.log("revokeMint:", revokeMint, "revokeFreeze:", revokeFreeze);
 
     try {
       const metaDataURL = await deployMetadataJSON(
@@ -80,13 +124,17 @@ function App() {
           name: tokenName,
           symbol: tokenTicker,
           uri: metaDataURL,
-        }
+        },
+        revokeMint,
+        revokeFreeze
       );
 
-      setMessage(`✅ Токен создан: ${tokenAddress}`);
+      setMessage(`✅ Token created: ${tokenAddress}`);
+      setMessageType("success");
     } catch (error) {
       console.error(error);
-      setMessage("❌ Ошибка при создании токена!");
+      setMessage("❌ Error creating token!");
+      setMessageType("error");
     } finally {
       setLoading(false);
     }
@@ -112,7 +160,7 @@ function App() {
     return `${config.ipfsGateway}/${cid}`;
   }
   const formatNumber = (num: string) => {
-    console.log("String: ", num.replace(/\B(?=(\d{3})+(?!\d))/g, " "))
+    console.log("String: ", num.replace(/\B(?=(\d{3})+(?!\d))/g, " "));
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   };
 
@@ -130,7 +178,7 @@ function App() {
         <div className="row mb-5">
           <h1 className="text-center">Solana Token Creator</h1>
           <h3 className="text-center gradient-description">
-            Create tokens in a few clicks!
+            Create tokens in a few clicks! (Video instruction <a href="https://youtu.be/5-8-0-9-5" target="_blank" rel="noreferrer">here</a>)
           </h3>
         </div>
         <div className="row justify-content-center">
@@ -146,33 +194,46 @@ function App() {
                       <input
                         type="text"
                         value={tokenName}
+                        maxLength={32}
                         onChange={(e) => setTokenName(e.target.value)}
-                        className="form-control"
+                        className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
                         id="token-name"
                         placeholder="Ex: Solana"
                       />
+                      <div className="invalid-feedback">Token Name is required.</div>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="token-amount">Token Supply</label>
+                      <label htmlFor="token-amount">
+                        <span className="text-danger">*</span> Token Supply
+                      </label>
                       <input
                         type="text"
                         value={tokenSupplyText}
+                        maxLength={15}
                         onChange={tokenAmountChange}
-                        className="form-control"
+                        className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
                         id="token-amount"
                         placeholder="1 000 000 000"
                       />
+                      <div className="invalid-feedback">Token Supply is required.</div>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="token-amount">Token Decimals</label>
+                      <label htmlFor="token-amount">
+                        <span className="text-danger">*</span> Token Decimals
+                      </label>
                       <input
                         type="number"
                         value={tokenDecimals}
-                        onChange={(e) => setTokenDecimals(e.target.value)}
-                        className="form-control"
+                        max={9}
+                        onChange={(e) => {
+                          const value = Math.min(9, Number(e.target.value)); // Ограничение на 9
+                          setTokenDecimals(value.toString());
+                        }}
+                        className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
                         id="token-decimals"
                         placeholder="6"
                       />
+                      <div className="invalid-feedback">Decimals is required.</div>
                     </div>
                   </div>
                   {/* Token Image (теперь справа) */}
@@ -183,15 +244,19 @@ function App() {
                       </label>
                       <input
                         type="text"
+                        maxLength={8}
                         value={tokenTicker}
                         onChange={(e) => setTokenTicker(e.target.value)}
-                        className="form-control"
+                        className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
                         id="token-ticker"
                         placeholder="SOL"
                       />
+                      <div className="invalid-feedback">Token Ticker is required.</div>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="file-input">Token Image</label>
+                      <label htmlFor="file-input">
+                        <span className="text-danger">*</span> Token Image
+                      </label>
                       <div className="upload-container">
                         {!tokenLogo && (
                           <label className="upload-box">
@@ -202,10 +267,11 @@ function App() {
                               type="file"
                               id="file-upload"
                               onChange={handleFileChange}
-                              className="form-control"
+                              className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
                               accept=".png, .jpg"
                               hidden
                             />
+                            <div className="invalid-feedback">Token Logo is required.</div>
                           </label>
                         )}
                         {tokenLogo && (
@@ -219,7 +285,7 @@ function App() {
                               type="file"
                               id="file-upload"
                               onChange={handleFileChange}
-                              className="form-control"
+                              className={`form-control ${errors.tokenName ? "is-invalid" : ""}`}
                               accept=".png, .jpg"
                               hidden
                             />
@@ -229,31 +295,71 @@ function App() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="description-input">Description</label>
+                    <label htmlFor="description-input"><span className="text-danger">*</span> Description</label>
                     <textarea
                       id="description-input"
                       value={description}
+                      maxLength={500}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="form-control description"
+                      className={`description form-control ${errors.tokenName ? "is-invalid" : ""}`}
                       placeholder="Ex: The most popular coin on Solana."
                     />
+                    <div className="invalid-feedback">Description is required.</div>
                   </div>
+                  <TokenSettings
+                    revokeFreeze={revokeFreeze}
+                    setRevokeFreeze={setRevokeFreeze}
+                    revokeMint={revokeMint}
+                    setRevokeMint={setRevokeMint}
+                  />
                 </div>
+                {message && (
+                  <div
+                    className={`alert ${
+                      messageType === "success"
+                        ? "alert-success"
+                        : "alert-danger"
+                    } mt-2`}
+                    role="alert"
+                  >
+                    {message}
+                  </div>
+                )}
                 <hr />
-                <button
-                  type="button"
-                  className="btn w-100 btn-create-coin"
-                  id="create-token"
-                  onClick={releaseToken}
-                  disabled={loading || !wallet.connected}
-                >
-                  {loading
-                    ? "Creating..."
-                    : !tokenName
-                    ? "Create Token"
-                    : "Create Token $" + tokenTicker}
-                </button>
-                {message && <p className="mt-2">{message}</p>}
+                {loading ? (
+                  <button
+                    type="button"
+                    className="btn w-100 btn-create-coin"
+                    disabled
+                  >
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>{" "}
+                    Creating...
+                  </button>
+                ) : !tokenTicker ? (
+                  <button
+                    type="button"
+                    className="btn w-100 btn-create-coin"
+                    id="create-token"
+                    onClick={releaseToken}
+                    disabled={!wallet.connected}
+                  >
+                    Create Token (Fee 0.2 SOL)
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn w-100 btn-create-coin"
+                    id="create-token"
+                    onClick={releaseToken}
+                    disabled={!wallet.connected}
+                  >
+                    Create Token ${tokenTicker} (Fee 0.2 SOL)
+                  </button>
+                )}
               </div>
             </div>
           </div>

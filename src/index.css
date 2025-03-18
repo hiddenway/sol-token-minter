@@ -10,20 +10,37 @@ body {
   font-weight: 400;
 }
 
+/* small {
+  font-size: 10px;
+} */
+
+.form-check-input {
+  transform: scale(1.5); /* Увеличение в 1.5 раза */
+}
+
+
+.tokens-col {
+  gap: 3rem !important;
+}
+
 .gradient-title {
   background: linear-gradient(to right, #3344FF, #FC32FF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.form-control {
-  margin-top: 12px;
-  margin-bottom: 12px;
+.form-group {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
 
+.form-control {
+  margin-top: 10px;
   border-radius: 20px;
   background-color: #33333A;
   color: white;
-  border-color: #111113;
+  border: 1px solid transparent;
+  border-color: #fff;
 }
 
 .description {
@@ -49,7 +66,7 @@ body {
 }
 
 .gradient-description {
-  background: linear-gradient(to right, #f307ac, #fb00ff);
+  background: linear-gradient(to right, #3344FF, #FC32FF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -97,7 +114,7 @@ body {
   width: 100%;
   height: 150px;
   background-color: #33333A;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   border-radius: 12px;
   text-align: center;
   color: white;
@@ -106,6 +123,7 @@ body {
   font-size: 14px;
   padding: 20px;
   transition: border-color 0.3s ease;
+  border-color: #fff;
 }
 
 .upload-box i {
@@ -130,7 +148,12 @@ body {
 }
 
 .btn-create-coin {
-  background: linear-gradient(to right, #3a49f9, #f307ac);
+  background: #3a49f9;
+  color: white;
+}
+
+.btn-create-coin:hover {
+  background: #3a4af9a5;
   color: white;
 }
 
@@ -139,4 +162,29 @@ body {
   height: 130px;
   object-fit: cover;
   border-radius: 10px;
+}
+
+
+.alert-danger {
+  --bs-alert-color: var(--bs-danger-text-emphasis);
+  --bs-alert-bg: #171719;
+  --bs-alert-border-color: #333339;
+  --bs-alert-link-color: var(--bs-danger-text-emphasis);
+  color: white;
+}
+
+.alert-success {
+  --bs-alert-color: #a3cfbb;
+  --bs-alert-bg: #212529;
+  --bs-alert-border-color: var(--bs-success-border-subtle);
+  --bs-alert-link-color: var(--bs-success-text-emphasis);
+}
+
+.gradient-border {
+  border: double 3px transparent;
+  border-radius: 30px;
+  background-image: linear-gradient(white, white), 
+                    linear-gradient(to right, #5D67D9, #FB78D6);
+  background-origin: border-box;
+  background-clip: content-box, border-box;
 }
