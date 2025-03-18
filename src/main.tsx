@@ -7,8 +7,11 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 
 import "@solana/wallet-adapter-react-ui/styles.css"; // Стили кнопки подключения кошелька
+import { config } from "./config";
 
-const network = clusterApiUrl("testnet"); // Используем тестовую сеть
+let network_name:any = config.network || "testnet";
+
+const network = clusterApiUrl(network_name); // Используем тестовую сеть
 
 const wallets = [new PhantomWalletAdapter()];
 

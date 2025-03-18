@@ -171,11 +171,11 @@ function App() {
       name: tokenName,
       symbol: tokenTicker,
       description: description,
-      image: `${config.ipfsGateway}/${imageId}`,
+      image: `https://${imageId}.ipfs.dweb.link`,
     };
     let cid = await uploadJSONToIPFS(metadata);
 
-    return `${config.ipfsGateway}/${cid}`;
+    return `https://${cid}.ipfs.dweb.link`;
   }
 
   const formatNumber = (num: string) => {

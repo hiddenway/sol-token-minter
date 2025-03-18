@@ -10,14 +10,24 @@ const app = express();
 const port = process.env.PORT || 3000;
 const upload = multer({ storage: multer.memoryStorage() });
 
+const projectId = "d1699857b92343009c782e1a814e4d42";
+const projectSecret = "a3559fb7ebd843fea8f872aa405c85fb";
+const auth =
+  "Basic " + Buffer.from(projectId + ":" + projectSecret).toString("base64");
+
 const ipfs = create({
-  url: process.env.IPFS_API_URL || "http://localhost:5001",
+  host: "ipfs.infura.io",
+  port: 5001,
+  protocol: "https",
+  headers: {
+    authorization: auth,
+  },
 });
 
 app.use(cors());
 app.use(express.json());
 
-app.post("/upload", upload.single("file"), async (req: any, res: any) => {
+app.post("/upload", upload.single("file"), async (req:any, res:any) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
@@ -25,12 +35,12 @@ app.post("/upload", upload.single("file"), async (req: any, res: any) => {
   try {
     const { path } = await ipfs.add(req.file.buffer);
     res.json({ cid: path });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+  } catch (error:any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.get("/get/:cid", async (req: any, res: any) => {
+app.get("/get/:cid", async (req, res) => {
   try {
     const stream = ipfs.cat(req.params.cid);
     res.setHeader("Content-Type", "application/octet-stream");
@@ -39,8 +49,8 @@ app.get("/get/:cid", async (req: any, res: any) => {
       res.write(chunk);
     }
     res.end();
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+  } catch (error:any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
