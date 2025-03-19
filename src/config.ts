@@ -1,5 +1,5 @@
 export const config = {
-    network: "https://convincing-black-panorama.solana-mainnet.quiknode.pro/2a1ebe2edf6a7c90d3b27f20acf58561b3aefca9/",
+    network: "https://api.mainnet-beta.solana.com",
     // network: "https://api.devnet.solana.com",
     ipfsGateway: "https://dweb.link/ipfs",
     supportLink: "https://t.me/danil_kho",
