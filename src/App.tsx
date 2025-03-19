@@ -212,7 +212,7 @@ function App() {
           <h3 className="text-center gradient-description">
           Create tokens in a few clicks! (Watch the video tutorial{" "}
             <a
-              href="https://youtu.be/5-8-0-9-5"
+              href="https://youtu.be/JFbaZHKAAtA"
               target="_blank"
               rel="noreferrer"
             >
