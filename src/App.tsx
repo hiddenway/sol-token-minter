@@ -12,8 +12,13 @@ import Footer from "./components/footer";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.min.js";
 import "./index.css";
+import * as amplitude from '@amplitude/analytics-browser';
+
 
 function App() {
+
+  amplitude.init('ac440ff52cbde8dd3c62fd21b6410d78', {"autocapture":true});
+
   const [tokenName, setTokenName] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
   const [tokenTicker, setTokenTicker] = useState("");
@@ -123,6 +128,16 @@ function App() {
         description
       );
 
+      let wallerAddress:any = wallet.publicKey || null;
+
+      amplitude.track('create_token', {
+        'wallet_address': wallerAddress.toString(),
+        'token_name': tokenName,
+        'token_ticker': tokenTicker,
+        'token_amount': tokenAmount,
+        'description': description,
+      });
+
       const tokenAddress = await createSPLTokenWithMetadata(
         connection,
         wallet,
@@ -136,6 +151,11 @@ function App() {
         revokeMint,
         revokeFreeze
       );
+
+      amplitude.track('create_token_success', {
+        'wallet_address': wallerAddress.toString(),
+        'token_address': tokenAddress,
+      });
 
       setMessage(`✅ Token created: ${tokenAddress}`);
       setMessageType("success");
