@@ -157,6 +157,7 @@ function App() {
       amplitude.track('create_token_success', {
         'wallet_address': wallerAddress.toString(),
         'token_address': tokenAddress,
+        'fee': 0.2,
       });
 
       setMessage(`✅ Token created: ${tokenAddress}`);
