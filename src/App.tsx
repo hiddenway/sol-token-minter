@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react"; // Подключаем Phantom Wallet
 import { WalletModalContext } from "@solana/wallet-adapter-react-ui";
 // Кнопка подключения кошелька
@@ -16,8 +16,6 @@ import * as amplitude from '@amplitude/analytics-browser';
 
 
 function App() {
-
-  amplitude.init('ac440ff52cbde8dd3c62fd21b6410d78', {"autocapture":true});
 
   const [tokenName, setTokenName] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
@@ -43,6 +41,10 @@ function App() {
     tokenLogo: false,
     tokenDescription: false,
   });
+
+  useEffect(() => {
+  amplitude.init("ac440ff52cbde8dd3c62fd21b6410d78", {"fetchRemoteConfig":true,"serverZone":"EU","autocapture":true});
+  }, []);
 
   const validateForm = () => {
     const newErrors = {
