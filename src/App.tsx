@@ -157,7 +157,7 @@ function App() {
       amplitude.track('create_token_success', {
         'wallet_address': wallerAddress.toString(),
         'token_address': tokenAddress,
-        'fee': 0.2,
+        'fee': 0.01,
       });
 
       setMessage(`✅ Token created: ${tokenAddress}`);
@@ -439,7 +439,7 @@ function App() {
                     id="create-token"
                     onClick={releaseToken}
                   >
-                    Create Token (Fee 0.2 SOL)
+                    Create Token (Fee 0.01 SOL)
                   </button>
                 ) : (
                   <button
@@ -448,7 +448,7 @@ function App() {
                     id="create-token"
                     onClick={releaseToken}
                   >
-                    Create Token ${tokenTicker} (Fee 0.2 SOL)
+                    Create Token ${tokenTicker} (Fee 0.01 SOL)
                   </button>
                 )}
               </div>
