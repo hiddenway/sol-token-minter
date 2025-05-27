@@ -184,11 +184,11 @@ function App() {
       name: tokenName,
       symbol: tokenTicker,
       description: description,
-      image: `https://${imageId}.ipfs.dweb.link`,
+      image: `https://gateway.pinata.cloud/ipfs/${imageId}`,
     };
     let cid = await uploadJSONToIPFS(metadata);
 
-    return `https://${cid}.ipfs.dweb.link`;
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
   }
 
   const formatNumber = (num: string) => {
