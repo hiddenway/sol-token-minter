@@ -306,7 +306,7 @@ function App() {
                       <div className="form-control-wrapper">
                         <input
                           type="text"
-                          maxLength={8}
+                          maxLength={24}
                           value={tokenTicker}
                           onChange={(e) => setTokenTicker(e.target.value)}
                           className={`form-control ${
